@@ -59,19 +59,44 @@ Para parar o servidor, pressione `Ctrl + C` no terminal onde o comando `ng serve
 
 Pronto! Agora você tem um aplicativo Angular Hello World funcionando.
 
-### 8. Usando Docker para rodar a aplicação
+### 8. Usando Docker e Nginx para rodar a aplicação
 
 #### Criando o Dockerfile
-Um `Dockerfile` foi criado para containerizar a aplicação Angular. Ele contém as seguintes instruções:
+Um `Dockerfile` foi criado para containerizar a aplicação Angular com Nginx. Ele contém as seguintes instruções:
 
 ```dockerfile
-FROM node:22
+# Etapa 1: Construção da aplicação Angular
+FROM node:22 AS build
 WORKDIR /app
-COPY . .
+COPY package*.json ./
 RUN npm install
-RUN npm install @angular/cli -g
-EXPOSE 4200
-CMD ["ng", "serve", "--host", "0.0.0.0"]
+COPY . .
+RUN npm run build --prod
+
+# Etapa 2: Configuração do Nginx
+FROM nginx:alpine
+COPY --from=build /app/dist/angular-hello-world /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+#### Criando o arquivo de configuração do Nginx
+Crie um arquivo chamado `nginx.conf` no mesmo diretório do `Dockerfile` com o seguinte conteúdo:
+
+```nginx
+server {
+    listen 80;
+    server_name localhost;
+
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+        try_files $uri /index.html;
+    }
+
+    error_page 404 /index.html;
+}
 ```
 
 #### Comandos para rodar o container
@@ -79,13 +104,13 @@ CMD ["ng", "serve", "--host", "0.0.0.0"]
 1. **Construir a imagem Docker**  
     Execute o comando abaixo no terminal para criar a imagem Docker da aplicação:
     ```bash
-    docker build -t angular-hello-world .
+    docker build -t angular-hello-world-nginx .
     ```
 
 2. **Rodar o container**  
     Após a imagem ser criada, execute o seguinte comando para iniciar o container:
     ```bash
-    docker run -d -p 8080:80 --name angular-hello-world-container angular-hello-world
+    docker run -d -p 8080:80 --name angular-hello-world-container angular-hello-world-nginx
     ```
 
 3. **Acessar a aplicação no navegador**  
@@ -94,7 +119,7 @@ CMD ["ng", "serve", "--host", "0.0.0.0"]
     http://localhost:8080
     ```
 
-    Você verá a aplicação Angular rodando dentro de um container Docker.
+    Você verá a aplicação Angular rodando dentro de um container Docker com Nginx.
 
 4. **Parar e remover o container**  
     Para parar o container, execute:
@@ -109,6 +134,7 @@ CMD ["ng", "serve", "--host", "0.0.0.0"]
 ### Observação
 Certifique-se de que o Docker está instalado e em execução no seu sistema antes de executar os comandos acima.
 
-### Recursos adicionais sobre Docker
+### Recursos adicionais sobre Docker e Nginx
 - [Documentação oficial do Docker](https://docs.docker.com/)
 - [Guia de início rápido do Docker](https://docs.docker.com/get-started/)
+- [Documentação oficial do Nginx](https://nginx.org/en/docs/)
