@@ -65,19 +65,13 @@ Pronto! Agora você tem um aplicativo Angular Hello World funcionando.
 Um `Dockerfile` foi criado para containerizar a aplicação Angular. Ele contém as seguintes instruções:
 
 ```dockerfile
-# Etapa 1: Construção
-FROM node:16 AS build
+FROM node:22
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
 COPY . .
-RUN npm run build --prod
-
-# Etapa 2: Servidor NGINX
-FROM nginx:alpine
-COPY --from=build /app/dist/angular-hello-world /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+RUN npm install
+RUN npm install @angular/cli -g
+EXPOSE 4200
+CMD ["ng", "serve", "--host", "0.0.0.0"]
 ```
 
 #### Comandos para rodar o container
